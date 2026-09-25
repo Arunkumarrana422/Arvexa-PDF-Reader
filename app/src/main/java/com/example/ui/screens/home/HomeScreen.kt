@@ -66,6 +66,9 @@ fun HomeScreen(
         },
         actions = {
           IconButton(onClick = onBrowseFiles) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Add / Open PDF")
+          }
+          IconButton(onClick = onBrowseFiles) {
             Icon(imageVector = Icons.Default.Search, contentDescription = "Search & Browse")
           }
           Box {
@@ -204,33 +207,22 @@ fun HomeScreen(
                 .padding(32.dp),
               horizontalAlignment = Alignment.CenterHorizontally
             ) {
-              Icon(
-                imageVector = Icons.Default.PictureAsPdf,
-                contentDescription = null,
-                tint = ArvexaBlue,
+              CircularProgressIndicator(
+                color = ArvexaBlue,
                 modifier = Modifier.size(48.dp)
               )
-              Spacer(modifier = Modifier.height(12.dp))
+              Spacer(modifier = Modifier.height(16.dp))
               Text(
-                text = "No PDFs Found",
+                text = "Scanning Device Storage...",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
               )
               Spacer(modifier = Modifier.height(4.dp))
               Text(
-                text = "Your PDF documents will appear here.",
+                text = "Searching storage and gradually listing PDFs...",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
               )
-              Spacer(modifier = Modifier.height(16.dp))
-              Button(
-                onClick = onBrowseFiles,
-                colors = ButtonDefaults.buttonColors(containerColor = ArvexaBlue)
-              ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Open File")
-              }
             }
           }
         }

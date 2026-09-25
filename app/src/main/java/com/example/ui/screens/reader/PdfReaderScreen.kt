@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +58,8 @@ fun PdfReaderScreen(
   var readingMode by remember { mutableStateOf("Normal") }
 
   var scale by remember { mutableStateOf(1.0f) }
+  var offsetX by remember { mutableStateOf(0f) }
+  var offsetY by remember { mutableStateOf(0f) }
 
   val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialPage)
 
@@ -203,8 +206,15 @@ fun PdfReaderScreen(
           }
         )
         .pointerInput(Unit) {
-          detectTransformGestures { _, _, zoom, _ ->
-            scale = (scale * zoom).coerceIn(1.0f, 3.0f)
+          detectTransformGestures { _, pan, zoom, _ ->
+            scale = (scale * zoom).coerceIn(1.0f, 4.0f)
+            if (scale > 1.0f) {
+              offsetX += pan.x
+              offsetY += pan.y
+            } else {
+              offsetX = 0f
+              offsetY = 0f
+            }
           }
         },
       contentAlignment = Alignment.Center
@@ -216,15 +226,21 @@ fun PdfReaderScreen(
       } else if (renderer != null && pageCount > 0) {
         LazyColumn(
           state = listState,
-          modifier = Modifier.fillMaxSize(),
+          modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer(
+              scaleX = scale,
+              scaleY = scale,
+              translationX = offsetX,
+              translationY = offsetY
+            ),
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
           items(pageCount) { index ->
             PdfPageItem(
               renderer = renderer,
-              pageIndex = index,
-              scale = scale
+              pageIndex = index
             )
           }
         }
@@ -337,8 +353,7 @@ fun PdfReaderScreen(
 @Composable
 fun PdfPageItem(
   renderer: PdfRenderer?,
-  pageIndex: Int,
-  scale: Float
+  pageIndex: Int
 ) {
   var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -362,15 +377,15 @@ fun PdfPageItem(
 
   Box(
     modifier = Modifier
-      .fillMaxWidth()
-      .padding(horizontal = 8.dp, vertical = 6.dp),
+      .fillMaxWidth(0.92f)
+      .padding(vertical = 8.dp),
     contentAlignment = Alignment.Center
   ) {
     Card(
       modifier = Modifier
-        .fillMaxWidth(scale)
-        .height((600 * scale).dp),
-      elevation = CardDefaults.cardElevation(1.dp), // subtle minimal shadow as requested
+        .fillMaxWidth()
+        .height(650.dp),
+      elevation = CardDefaults.cardElevation(1.dp),
       colors = CardDefaults.cardColors(containerColor = Color.White),
       shape = RoundedCornerShape(8.dp)
     ) {
