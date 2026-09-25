@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -121,12 +123,6 @@ fun PdfReaderScreen(
           }
         },
         actions = {
-          IconButton(onClick = { scale = (scale + 0.25f).coerceIn(1.0f, 2.5f) }) {
-            Icon(imageVector = Icons.Default.ZoomIn, contentDescription = "Zoom In")
-          }
-          IconButton(onClick = { scale = (scale - 0.25f).coerceIn(1.0f, 2.5f) }) {
-            Icon(imageVector = Icons.Default.ZoomOut, contentDescription = "Zoom Out")
-          }
           IconButton(onClick = {
             isBookmarked = !isBookmarked
             if (isBookmarked) {
@@ -205,7 +201,12 @@ fun PdfReaderScreen(
             "Sepia" -> Color(0xFFF4ECD8)
             else -> MaterialTheme.colorScheme.background
           }
-        ),
+        )
+        .pointerInput(Unit) {
+          detectTransformGestures { _, _, zoom, _ ->
+            scale = (scale * zoom).coerceIn(1.0f, 3.0f)
+          }
+        },
       contentAlignment = Alignment.Center
     ) {
       if (isLoading) {
@@ -369,7 +370,7 @@ fun PdfPageItem(
       modifier = Modifier
         .fillMaxWidth(scale)
         .height((600 * scale).dp),
-      elevation = CardDefaults.cardElevation(4.dp),
+      elevation = CardDefaults.cardElevation(1.dp), // subtle minimal shadow as requested
       colors = CardDefaults.cardColors(containerColor = Color.White),
       shape = RoundedCornerShape(8.dp)
     ) {

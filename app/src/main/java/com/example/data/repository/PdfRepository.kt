@@ -181,6 +181,52 @@ class PdfRepository(
           }
         }
       }
+
+      // Also scan standard File storage directories recursively
+      val searchDirs = listOf(
+        android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS),
+        android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS),
+        File("/storage/emulated/0/Download"),
+        File("/storage/emulated/0/Documents"),
+        File("/sdcard/Download"),
+        File("/sdcard/Documents")
+      )
+
+      for (dir in searchDirs) {
+        if (dir != null && dir.exists() && dir.isDirectory) {
+          walkAndAddPdfs(dir)
+        }
+      }
+    } catch (_: Exception) {}
+  }
+
+  private suspend fun walkAndAddPdfs(dir: File) {
+    try {
+      val files = dir.listFiles() ?: return
+      for (file in files) {
+        if (file.isDirectory) {
+          walkAndAddPdfs(file)
+        } else if (file.name.endsWith(".pdf", ignoreCase = true)) {
+          val uriString = Uri.fromFile(file).toString()
+          val existing = documentDao.getDocumentByUri(uriString)
+          if (existing == null) {
+            val (pageCount, size) = getPdfPageCountAndInfo(uriString)
+            val now = System.currentTimeMillis()
+            val doc = DocumentEntity(
+              uri = uriString,
+              name = file.name,
+              size = if (size > 0) size else file.length(),
+              pageCount = if (pageCount > 0) pageCount else 1,
+              lastOpened = 0L,
+              lastPage = 0,
+              isFavorite = false,
+              createdAt = now,
+              modifiedAt = now
+            )
+            documentDao.insertDocument(doc)
+          }
+        }
+      }
     } catch (_: Exception) {}
   }
 }
