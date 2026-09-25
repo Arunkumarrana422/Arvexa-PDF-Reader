@@ -6,10 +6,10 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -19,8 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,9 +54,7 @@ fun PdfReaderScreen(
   var showSearchDialog by remember { mutableStateOf(false) }
   var readingMode by remember { mutableStateOf("Normal") }
 
-  var scale by remember { mutableStateOf(1f) }
-  var offsetX by remember { mutableStateOf(0f) }
-  var offsetY by remember { mutableStateOf(0f) }
+  var scale by remember { mutableStateOf(1.0f) }
 
   val listState = rememberLazyListState(initialFirstVisibleItemIndex = initialPage)
 
@@ -125,8 +121,11 @@ fun PdfReaderScreen(
           }
         },
         actions = {
-          IconButton(onClick = { showSearchDialog = true }) {
-            Icon(imageVector = Icons.Default.Search, contentDescription = "Search")
+          IconButton(onClick = { scale = (scale + 0.25f).coerceIn(1.0f, 2.5f) }) {
+            Icon(imageVector = Icons.Default.ZoomIn, contentDescription = "Zoom In")
+          }
+          IconButton(onClick = { scale = (scale - 0.25f).coerceIn(1.0f, 2.5f) }) {
+            Icon(imageVector = Icons.Default.ZoomOut, contentDescription = "Zoom Out")
           }
           IconButton(onClick = {
             isBookmarked = !isBookmarked
@@ -216,20 +215,7 @@ fun PdfReaderScreen(
       } else if (renderer != null && pageCount > 0) {
         LazyColumn(
           state = listState,
-          modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-              detectTransformGestures { _, pan, zoom, _ ->
-                scale = (scale * zoom).coerceIn(1f, 4f)
-                if (scale > 1f) {
-                  offsetX += pan.x
-                  offsetY += pan.y
-                } else {
-                  offsetX = 0f
-                  offsetY = 0f
-                }
-              }
-            },
+          modifier = Modifier.fillMaxSize(),
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -237,9 +223,7 @@ fun PdfReaderScreen(
             PdfPageItem(
               renderer = renderer,
               pageIndex = index,
-              scale = scale,
-              offsetX = offsetX,
-              offsetY = offsetY
+              scale = scale
             )
           }
         }
@@ -353,9 +337,7 @@ fun PdfReaderScreen(
 fun PdfPageItem(
   renderer: PdfRenderer?,
   pageIndex: Int,
-  scale: Float,
-  offsetX: Float,
-  offsetY: Float
+  scale: Float
 ) {
   var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -377,33 +359,33 @@ fun PdfPageItem(
     }
   }
 
-  Card(
+  Box(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(8.dp)
-      .graphicsLayer(
-        scaleX = scale,
-        scaleY = scale,
-        translationX = offsetX,
-        translationY = offsetY
-      ),
-    elevation = CardDefaults.cardElevation(4.dp),
-    colors = CardDefaults.cardColors(containerColor = Color.White)
+      .padding(horizontal = 8.dp, vertical = 6.dp),
+    contentAlignment = Alignment.Center
   ) {
-    Box(
+    Card(
       modifier = Modifier
-        .fillMaxWidth()
-        .height(600.dp),
-      contentAlignment = Alignment.Center
+        .fillMaxWidth(scale)
+        .height((600 * scale).dp),
+      elevation = CardDefaults.cardElevation(4.dp),
+      colors = CardDefaults.cardColors(containerColor = Color.White),
+      shape = RoundedCornerShape(8.dp)
     ) {
-      if (bitmap != null) {
-        Image(
-          bitmap = bitmap!!.asImageBitmap(),
-          contentDescription = "PDF Page ${pageIndex + 1}",
-          modifier = Modifier.fillMaxSize()
-        )
-      } else {
-        CircularProgressIndicator(color = ArvexaBlue)
+      Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        if (bitmap != null) {
+          Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = "PDF Page ${pageIndex + 1}",
+            modifier = Modifier.fillMaxSize()
+          )
+        } else {
+          CircularProgressIndicator(color = ArvexaBlue)
+        }
       }
     }
   }

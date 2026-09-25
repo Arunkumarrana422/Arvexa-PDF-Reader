@@ -61,6 +61,9 @@ class MainActivity : ComponentActivity() {
             OnboardingScreen(
               onGetStarted = {
                 hasCompletedOnboarding = true
+                coroutineScope.launch {
+                  repository.scanDeviceStorageForPdfs()
+                }
                 navController.navigate("home") {
                   popUpTo("onboarding") { inclusive = true }
                 }
@@ -69,6 +72,12 @@ class MainActivity : ComponentActivity() {
           }
 
           composable("home") {
+            LaunchedEffect(Unit) {
+              coroutineScope.launch {
+                repository.scanDeviceStorageForPdfs()
+              }
+            }
+
             HomeScreen(
               recentDocs = recentDocs,
               onOpenPdf = { uri ->

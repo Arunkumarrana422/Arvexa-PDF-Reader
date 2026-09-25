@@ -260,7 +260,10 @@ fun QuickActionButton(
 ) {
   Column(
     horizontalAlignment = Alignment.CenterHorizontally,
-    modifier = Modifier.clickable(onClick = onClick)
+    modifier = Modifier
+      .clip(RoundedCornerShape(16.dp))
+      .clickable(onClick = onClick)
+      .padding(8.dp)
   ) {
     Surface(
       shape = RoundedCornerShape(16.dp),
@@ -295,9 +298,8 @@ fun DocumentCard(
   var menuExpanded by remember { mutableStateOf(false) }
 
   Card(
-    modifier = Modifier
-      .fillMaxWidth()
-      .clickable(onClick = onOpen),
+    onClick = onOpen,
+    modifier = Modifier.fillMaxWidth(),
     shape = RoundedCornerShape(16.dp),
     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
   ) {

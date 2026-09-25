@@ -126,4 +126,61 @@ class PdfRepository(
       null
     }
   }
+
+  suspend fun scanDeviceStorageForPdfs() = withContext(Dispatchers.IO) {
+    try {
+      val collection = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        android.provider.MediaStore.Files.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL)
+      } else {
+        android.provider.MediaStore.Files.getContentUri("external")
+      }
+
+      val projection = arrayOf(
+        android.provider.MediaStore.Files.FileColumns._ID,
+        android.provider.MediaStore.Files.FileColumns.DISPLAY_NAME,
+        android.provider.MediaStore.Files.FileColumns.SIZE,
+        android.provider.MediaStore.Files.FileColumns.DATE_MODIFIED
+      )
+
+      val selection = "${android.provider.MediaStore.Files.FileColumns.MIME_TYPE} = ?"
+      val selectionArgs = arrayOf("application/pdf")
+
+      context.contentResolver.query(
+        collection,
+        projection,
+        selection,
+        selectionArgs,
+        null
+      )?.use { cursor ->
+        val idCol = cursor.getColumnIndexOrThrow(android.provider.MediaStore.Files.FileColumns._ID)
+        val nameCol = cursor.getColumnIndexOrThrow(android.provider.MediaStore.Files.FileColumns.DISPLAY_NAME)
+        val sizeCol = cursor.getColumnIndexOrThrow(android.provider.MediaStore.Files.FileColumns.SIZE)
+
+        while (cursor.moveToNext()) {
+          val id = cursor.getLong(idCol)
+          val name = cursor.getString(nameCol) ?: "Document.pdf"
+          val size = cursor.getLong(sizeCol)
+          val contentUri = android.content.ContentUris.withAppendedId(collection, id).toString()
+
+          val existing = documentDao.getDocumentByUri(contentUri)
+          if (existing == null) {
+            val (pageCount, _) = getPdfPageCountAndInfo(contentUri)
+            val now = System.currentTimeMillis()
+            val doc = DocumentEntity(
+              uri = contentUri,
+              name = name,
+              size = size,
+              pageCount = if (pageCount > 0) pageCount else 1,
+              lastOpened = 0L,
+              lastPage = 0,
+              isFavorite = false,
+              createdAt = now,
+              modifiedAt = now
+            )
+            documentDao.insertDocument(doc)
+          }
+        }
+      }
+    } catch (_: Exception) {}
+  }
 }
