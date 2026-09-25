@@ -207,11 +207,10 @@ fun PdfReaderScreen(
         )
         .pointerInput(Unit) {
           detectTransformGestures { _, pan, zoom, _ ->
-            scale = (scale * zoom).coerceIn(1.0f, 4.0f)
+            scale = (scale * zoom).coerceIn(1.0f, 5.0f)
             if (scale > 1.0f) {
-              val maxOffset = (scale - 1f) * 400f
-              offsetX = (offsetX + pan.x).coerceIn(-maxOffset, maxOffset)
-              offsetY = (offsetY + pan.y).coerceIn(-maxOffset, maxOffset)
+              offsetX += pan.x
+              offsetY += pan.y
             } else {
               offsetX = 0f
               offsetY = 0f
@@ -370,7 +369,10 @@ fun PdfPageItem(
             if (w > 0 && h > 0) {
               aspectRatio = w.toFloat() / h.toFloat()
             }
-            val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            // Render at 3x resolution for ultra-high definition / crystal clear quality without degradation
+            val renderW = w * 3
+            val renderH = h * 3
+            val bmp = Bitmap.createBitmap(renderW, renderH, Bitmap.Config.ARGB_8888)
             page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
             bitmap = bmp
