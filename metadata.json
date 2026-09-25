@@ -1,0 +1,6 @@
+{
+  "name": "Arvexa PDF Reader",
+  "description": "A modern, premium, fast, secure and user-friendly PDF reader for Android.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
