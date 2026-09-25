@@ -209,8 +209,9 @@ fun PdfReaderScreen(
           detectTransformGestures { _, pan, zoom, _ ->
             scale = (scale * zoom).coerceIn(1.0f, 4.0f)
             if (scale > 1.0f) {
-              offsetX += pan.x
-              offsetY += pan.y
+              val maxOffset = (scale - 1f) * 400f
+              offsetX = (offsetX + pan.x).coerceIn(-maxOffset, maxOffset)
+              offsetY = (offsetY + pan.y).coerceIn(-maxOffset, maxOffset)
             } else {
               offsetX = 0f
               offsetY = 0f
@@ -356,6 +357,7 @@ fun PdfPageItem(
   pageIndex: Int
 ) {
   var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+  var aspectRatio by remember { mutableStateOf(0.7f) }
 
   LaunchedEffect(renderer, pageIndex) {
     withContext(Dispatchers.IO) {
@@ -363,8 +365,11 @@ fun PdfPageItem(
         renderer?.let { r ->
           synchronized(r) {
             val page = r.openPage(pageIndex)
-            val w = page.width * 2
-            val h = page.height * 2
+            val w = page.width
+            val h = page.height
+            if (w > 0 && h > 0) {
+              aspectRatio = w.toFloat() / h.toFloat()
+            }
             val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
@@ -384,7 +389,7 @@ fun PdfPageItem(
     Card(
       modifier = Modifier
         .fillMaxWidth()
-        .height(650.dp),
+        .aspectRatio(aspectRatio),
       elevation = CardDefaults.cardElevation(1.dp),
       colors = CardDefaults.cardColors(containerColor = Color.White),
       shape = RoundedCornerShape(8.dp)
